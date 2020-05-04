@@ -1,6 +1,8 @@
 # Raytracer in TypeScript!
 
-A basic raytracer written in TypeScript
+A basic raytracer written in TypeScript.
+
+https://www.sainsmograf.com/raytracer-typescript/
 
 
 ## Available Scripts
