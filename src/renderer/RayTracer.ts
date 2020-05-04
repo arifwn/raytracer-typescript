@@ -45,6 +45,8 @@ class RayTracer {
     fov: Math.PI / 2, // 90 degree FOV
   }
   tileWidth = 30;
+  floorWidth = 1000;
+  maxRenderDistance = 10000;
 
   constructor(drawer: Drawer|null) {
     if (drawer) this.drawer = drawer;
@@ -76,46 +78,81 @@ class RayTracer {
       }
   }
 
+  lightenColor(color: string, amount: number) {
+    let usePound = false;
+    if (color[0] == "#") {
+        color = color.slice(1);
+        usePound = true;
+    }
+ 
+    const colorNum = parseInt(color, 16);
+ 
+    let r = (colorNum >> 16) + amount;
+ 
+    if (r > 255) r = 255;
+    else if  (r < 0) r = 0;
+ 
+    let b = ((colorNum >> 8) & 0x00FF) + amount;
+ 
+    if (b > 255) b = 255;
+    else if  (b < 0) b = 0;
+ 
+    let g = (colorNum & 0x0000FF) + amount;
+ 
+    if (g > 255) g = 255;
+    else if (g < 0) g = 0;
+ 
+    return (usePound?"#":"") + (g | (b << 8) | (r << 16)).toString(16);
+  }
+
   rayPixel(origin: Point3D, direction: Rotation3D) : string {
-    const hitPoint = this.shoot(origin, direction);
+    const [hitPoint, rayDistance] = this.shoot(origin, direction);
     if (Math.abs(hitPoint.x) == Infinity) return this.colors.sky;
     if (Math.abs(hitPoint.y) == Infinity) return this.colors.sky;
     if (Math.abs(hitPoint.z) == Infinity) return this.colors.sky;
     if (hitPoint.z == 0) {
       let isDark = false;
-      if ((Math.abs(Math.floor(hitPoint.x % (this.tileWidth*2))) < this.tileWidth) && (Math.abs(Math.floor(hitPoint.y % (this.tileWidth*2))) < this.tileWidth)) {
+      if ((Math.abs(Math.round(hitPoint.x % (this.tileWidth*2))) < this.tileWidth) && (Math.abs(Math.round(hitPoint.y % (this.tileWidth*2))) < this.tileWidth)) {
         isDark = true;
       }
-      if ((Math.abs(Math.floor(hitPoint.x % (this.tileWidth*2))) >= this.tileWidth) && (Math.abs(Math.floor(hitPoint.y % (this.tileWidth*2))) >= this.tileWidth)) {
+      if ((Math.abs(Math.round(hitPoint.x % (this.tileWidth*2))) >= this.tileWidth) && (Math.abs(Math.round(hitPoint.y % (this.tileWidth*2))) >= this.tileWidth)) {
         isDark = true;
       }
       if (hitPoint.x < 0) isDark = !isDark;
 
-      if (isDark) return this.colors.black;
+      if (isDark) {
+        // return this.colors.black;
+        const lightenAmount = ((rayDistance > this.maxRenderDistance ? this.maxRenderDistance : rayDistance) / this.maxRenderDistance) * 200;
+        return this.lightenColor(this.colors.black, lightenAmount);
+      }
       return this.colors.white;
     }
     return this.colors.white;
   }
 
-  shoot(origin: Point3D, direction: Rotation3D): Point3D {
+  shoot(origin: Point3D, direction: Rotation3D): [Point3D, number] {
+
+    // if an object is in the path of the ray, bounch it.
 
     // render sky
-    if ((direction.rx > 0) && (direction.rx < Math.PI)) return {
+    if ((direction.rx > 0) && (direction.rx < Math.PI)) return [{
       x: 0,
       y: Infinity,
       z: Infinity
-    };
+    }, Infinity];
 
     // render floor
-    const rayLength = origin.z / Math.cos((Math.PI/2)-direction.rx);
+    const rayDistance = origin.z / Math.cos((Math.PI/2)-direction.rx);
     const planeLength = origin.z / Math.tan(-direction.rx);
     const y = origin.y + (Math.cos(direction.rz) * planeLength);
     const x = origin.x + (Math.sin(direction.rz) * planeLength);
-    return {
-      x: isNaN(x) ? Infinity : (Math.abs(x) > 1000 ? Infinity : x),
-      y: isNaN(y) ? Infinity : (Math.abs(y) > 1000 ? Infinity : y),
+    return [{
+      // x: isNaN(x) ? Infinity : (Math.abs(x) > this.floorWidth ? Infinity : x),
+      // y: isNaN(y) ? Infinity : (Math.abs(y) > this.floorWidth ? Infinity : y),
+      x: isNaN(x) ? Infinity : x,
+      y: isNaN(y) ? Infinity : y,
       z: 0
-    };
+    }, isNaN(rayDistance) ? Infinity : Math.abs(rayDistance)];
   }
 
 }
