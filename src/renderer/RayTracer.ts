@@ -28,7 +28,7 @@ interface Rotation3D {
 const defaultColors: RenderColors = {
   white: '#ffffff',
   black: '#000000',
-  sky: '#2196f3',
+  sky: '#ffffff',
   highlight: '#b71c1c'
 }
 

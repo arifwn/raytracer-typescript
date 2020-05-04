@@ -56,17 +56,17 @@ function RayTracer({siteSetting, design, topBannerShown}: any) {
     <div className={classes.renderedImageContainer} style={{width : 500}}>
       <div>
         <Button onClick={() => setX(x - 10)}>Left</Button>
+        <Button onClick={() => setX(x + 10)}>Right</Button>
         <Button onClick={() => setY(y + 10)}>Front</Button>
         <Button onClick={() => setY(y - 10)}>Back</Button>
-        <Button onClick={() => setX(x + 10)}>Right</Button>
       </div>
       <div>
         <Button onClick={() => setRz(rz - .1)}>Rt Left</Button>
         <Button onClick={() => setRz(rz + .1)}>Rt Right</Button>
         <Button onClick={() => setRx(rx + .1)}>Rt Up</Button>
         <Button onClick={() => setRx(rx - .1)}>Rt Down</Button>
-        <Button onClick={() => setZ(z + 10)}>Top</Button>
-        <Button onClick={() => setZ(z - 10)}>Bottom</Button>
+        <Button onClick={() => setZ(z + 10)}>Up</Button>
+        <Button onClick={() => setZ(z - 10)}>Down</Button>
       </div>
     </div>
   </div>);
