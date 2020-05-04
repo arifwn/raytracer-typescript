@@ -144,7 +144,7 @@ class RayTracer {
 
         // calculate new angles
         const newDirection = {
-          rx: direction.rx - .1,
+          rx: direction.rx - .05, // add small slope to the mirror
           ry: 0,
           rz: (Math.PI - direction.rz),
         };
@@ -163,15 +163,16 @@ class RayTracer {
 
     // render floor
     const rayDistance = origin.z / Math.cos((Math.PI/2)-direction.rx);
+    const rayDistanceAbs = isNaN(rayDistance) ? Infinity : Math.abs(rayDistance);
     const planeLength = origin.z / Math.tan(-direction.rx);
     const y = origin.y + (Math.cos(direction.rz) * planeLength);
     const x = origin.x + (Math.sin(direction.rz) * planeLength);
     
     let hitPoint = {
-      x: isNaN(x) ? Infinity : (Math.abs(x) > this.floorWidth ? Infinity : x),
-      y: isNaN(y) ? Infinity : (Math.abs(y) > this.floorWidth ? Infinity : y),
-      // x: isNaN(x) ? Infinity : x,
-      // y: isNaN(y) ? Infinity : y,
+      // x: isNaN(x) ? Infinity : (Math.abs(x) > this.floorWidth ? Infinity : x),
+      // y: isNaN(y) ? Infinity : (Math.abs(y) > this.floorWidth ? Infinity : y),
+      x: isNaN(x) ? Infinity : x,
+      y: isNaN(y) ? Infinity : y,
       z: 0
     };
 
@@ -186,7 +187,7 @@ class RayTracer {
     if (hitPoint.x < 0) isDark = !isDark;
 
     if (isDark) {
-      const lightenAmount = ((rayDistance > this.maxRenderDistance ? this.maxRenderDistance : rayDistance) / this.maxRenderDistance) * 200;
+      const lightenAmount = ((rayDistanceAbs > this.maxRenderDistance ? this.maxRenderDistance : rayDistanceAbs) / this.maxRenderDistance) * 200;
       floorColor = this.lightenColor(this.colors.black, lightenAmount);
     }
     else {
@@ -199,7 +200,7 @@ class RayTracer {
 
     return [
       hitPoint,
-      isNaN(rayDistance) ? Infinity : Math.abs(rayDistance),
+      rayDistanceAbs,
       floorColor
     ];
   }
