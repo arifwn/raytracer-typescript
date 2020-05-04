@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Raytracer TypeScript",
+  "name": "Simple raytracer written in TypeScript",
   "icons": [
     {
       "src": "favicon.ico",
