@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "c2807a8131bb7c95ea2cd7f3f7d57731",
+    "revision": "ffb731516867ad0d3b79833d93adaabd",
     "url": "/raytracer-typescript/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/raytracer-typescript/static/css/2.fa74a0b6.chunk.css"
   },
   {
-    "revision": "1bbe750f2e2f395e91ad",
+    "revision": "e7aaa5f439b745a1e3e2",
     "url": "/raytracer-typescript/static/css/main.5f361e03.chunk.css"
   },
   {
@@ -20,8 +20,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/raytracer-typescript/static/js/2.79de6c26.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "1bbe750f2e2f395e91ad",
-    "url": "/raytracer-typescript/static/js/main.ebbf3114.chunk.js"
+    "revision": "e7aaa5f439b745a1e3e2",
+    "url": "/raytracer-typescript/static/js/main.e7706508.chunk.js"
   },
   {
     "revision": "97d9770759a76f7e07cc",
