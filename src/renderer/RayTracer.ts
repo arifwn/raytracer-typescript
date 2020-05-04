@@ -63,19 +63,22 @@ class RayTracer {
         y: this.camera.y,
         z: this.camera.z,
       };
+      
+      Array.from(Array(renderDimension.height).keys()).forEach((ypos) => {
+        window.setTimeout(() => {
+          Array.from(Array(renderDimension.width).keys()).forEach((xpos) => {
+            let rz = -cameraFOV/2 + (xpos * (cameraFOV / renderDimension.width));
+            let rx = cameraFOV/2 - (ypos * (cameraFOV / renderDimension.height));
+            
+            draw.at(xpos, ypos, this.rayPixel(cameraOriginPos, {
+              rx: this.camera.rx + rx,
+              ry: this.camera.ry + 0,
+              rz: this.camera.rz + rz,
+            }));
+          });
+        }, 0);
+      })
 
-      for (let ypos = 0; ypos < renderDimension.height; ypos++) {
-        for (let xpos = 0; xpos < renderDimension.width; xpos++) {
-          let rz = -cameraFOV/2 + (xpos * (cameraFOV / renderDimension.width));
-          let rx = cameraFOV/2 - (ypos * (cameraFOV / renderDimension.height));
-          // console.log('cam', xpos, ypos, rz, rx);
-          draw.at(xpos, ypos, this.rayPixel(cameraOriginPos, {
-            rx: this.camera.rx + rx,
-            ry: this.camera.ry + 0,
-            rz: this.camera.rz + rz,
-          }));
-        }
-      }
   }
 
   lightenColor(color: string, amount: number) {
@@ -106,54 +109,123 @@ class RayTracer {
   }
 
   rayPixel(origin: Point3D, direction: Rotation3D) : string {
-    const [hitPoint, rayDistance] = this.shoot(origin, direction);
-    if (Math.abs(hitPoint.x) == Infinity) return this.colors.sky;
-    if (Math.abs(hitPoint.y) == Infinity) return this.colors.sky;
-    if (Math.abs(hitPoint.z) == Infinity) return this.colors.sky;
-    if (hitPoint.z == 0) {
-      let isDark = false;
-      if ((Math.abs(Math.round(hitPoint.x % (this.tileWidth*2))) < this.tileWidth) && (Math.abs(Math.round(hitPoint.y % (this.tileWidth*2))) < this.tileWidth)) {
-        isDark = true;
-      }
-      if ((Math.abs(Math.round(hitPoint.x % (this.tileWidth*2))) >= this.tileWidth) && (Math.abs(Math.round(hitPoint.y % (this.tileWidth*2))) >= this.tileWidth)) {
-        isDark = true;
-      }
-      if (hitPoint.x < 0) isDark = !isDark;
-
-      if (isDark) {
-        // return this.colors.black;
-        const lightenAmount = ((rayDistance > this.maxRenderDistance ? this.maxRenderDistance : rayDistance) / this.maxRenderDistance) * 200;
-        return this.lightenColor(this.colors.black, lightenAmount);
-      }
-      return this.colors.white;
-    }
-    return this.colors.white;
+    const [hitPoint, rayDistance, color] = this.shoot(origin, direction);
+    
+    return color;
   }
 
-  shoot(origin: Point3D, direction: Rotation3D): [Point3D, number] {
+  shoot(origin: Point3D, direction: Rotation3D): [Point3D, number, string] {
 
     // if an object is in the path of the ray, bounch it.
+    for (let i = 0; i < this.pillars.length; i++) {
+      const pillar = this.pillars[i];
+      
+      // calculate pillar rz from camera
+      const pillarNormalizedPosition = {
+        x: pillar.position.x - origin.x,
+        y: pillar.position.y - origin.y,
+        z: pillar.position.z - origin.z,
+      };
+      const pillarRz = Math.atan(pillarNormalizedPosition.x / pillarNormalizedPosition.y)
+      const pillarRzMin = Math.atan((pillarNormalizedPosition.x - pillar.width) / pillarNormalizedPosition.y)
+      const pillarRzMax = Math.atan((pillarNormalizedPosition.x + pillar.width) / pillarNormalizedPosition.y)
+      
+      const pillarRxMin = Math.atan(pillarNormalizedPosition.z / pillarNormalizedPosition.y);
+      const pillarRxMax = Math.atan(((pillar.position.z + pillar.height) - origin.z) / pillarNormalizedPosition.y);
+
+      if ((direction.rz > pillarRzMin) && (direction.rz < pillarRzMax) && (direction.rx > pillarRxMin) && (direction.rx < pillarRxMax)) {
+        // bounce the ray
+        const pillarPlaneLength = (pillar.position.y - origin.y) / Math.cos(direction.rz);
+        const newOrigin = {
+          x: (Math.tan(direction.rz) * (pillar.position.y - origin.y)) + origin.x,
+          y: pillar.position.y,
+          z: (Math.tan(direction.rx) * pillarPlaneLength) + origin.z,
+        };
+
+        // calculate new angles
+        const newDirection = {
+          rx: direction.rx - .1,
+          ry: 0,
+          rz: (Math.PI - direction.rz),
+        };
+
+        const [hitPoint, rayDistance, color] = this.shoot(newOrigin, newDirection);
+        return [hitPoint, rayDistance, this.lightenColor(color, 100)];
+      }
+    }
 
     // render sky
     if ((direction.rx > 0) && (direction.rx < Math.PI)) return [{
       x: 0,
       y: Infinity,
       z: Infinity
-    }, Infinity];
+    }, Infinity, this.colors.sky];
 
     // render floor
     const rayDistance = origin.z / Math.cos((Math.PI/2)-direction.rx);
     const planeLength = origin.z / Math.tan(-direction.rx);
     const y = origin.y + (Math.cos(direction.rz) * planeLength);
     const x = origin.x + (Math.sin(direction.rz) * planeLength);
-    return [{
-      // x: isNaN(x) ? Infinity : (Math.abs(x) > this.floorWidth ? Infinity : x),
-      // y: isNaN(y) ? Infinity : (Math.abs(y) > this.floorWidth ? Infinity : y),
-      x: isNaN(x) ? Infinity : x,
-      y: isNaN(y) ? Infinity : y,
+    
+    let hitPoint = {
+      x: isNaN(x) ? Infinity : (Math.abs(x) > this.floorWidth ? Infinity : x),
+      y: isNaN(y) ? Infinity : (Math.abs(y) > this.floorWidth ? Infinity : y),
+      // x: isNaN(x) ? Infinity : x,
+      // y: isNaN(y) ? Infinity : y,
       z: 0
-    }, isNaN(rayDistance) ? Infinity : Math.abs(rayDistance)];
+    };
+
+    let floorColor = this.colors.black;
+    let isDark = false;
+    if ((Math.abs(Math.round(hitPoint.x % (this.tileWidth*2))) < this.tileWidth) && (Math.abs(Math.round(hitPoint.y % (this.tileWidth*2))) < this.tileWidth)) {
+      isDark = true;
+    }
+    if ((Math.abs(Math.round(hitPoint.x % (this.tileWidth*2))) >= this.tileWidth) && (Math.abs(Math.round(hitPoint.y % (this.tileWidth*2))) >= this.tileWidth)) {
+      isDark = true;
+    }
+    if (hitPoint.x < 0) isDark = !isDark;
+
+    if (isDark) {
+      const lightenAmount = ((rayDistance > this.maxRenderDistance ? this.maxRenderDistance : rayDistance) / this.maxRenderDistance) * 200;
+      floorColor = this.lightenColor(this.colors.black, lightenAmount);
+    }
+    else {
+      floorColor = this.colors.white;
+    }
+    
+    if ((hitPoint.x == Infinity) || (hitPoint.y == Infinity) || (hitPoint.z == Infinity)) {
+      floorColor = this.colors.sky;
+    }
+
+    return [
+      hitPoint,
+      isNaN(rayDistance) ? Infinity : Math.abs(rayDistance),
+      floorColor
+    ];
   }
+
+  pillars = [
+    {
+      position: {
+        x: 80,
+        y: 345,
+        z: 0,
+      },
+      width: this.tileWidth/2,
+      height: 120,
+    }
+  ];
+
+  spheres = [
+    {
+      position: {
+        x: 0,
+        y: 100,
+        z: 30,
+      },
+      radius: 30
+    }
+  ];
 
 }
 
